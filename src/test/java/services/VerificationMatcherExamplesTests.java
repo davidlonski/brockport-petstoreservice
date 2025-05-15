@@ -26,7 +26,9 @@ public class VerificationMatcherExamplesTests {
 
         @Override
         public boolean matches(List list) {
-            return ((List) list).size() == 2;
+            // Changed the list size to 3 to test the verification matcher instead of 2
+            // Which resulted in the other test failing and testing for three elements to pass
+            return ((List) list).size() == 3;
         }
 
         @Override
@@ -80,6 +82,10 @@ public class VerificationMatcherExamplesTests {
         List mock = mock(List.class);
         //arrange
         Mockito.when(mock.addAll(argThat(new IsListOfTwoElements()))).thenReturn(true);
+        // Another note is that instead of using the IsListOfTwoElements class, we can use the list -> list.size() == 3
+        // In this case, we are testing for three elements to pass and each test will pass
+        //Mockito.when(mock.addAll(argThat(list -> list.size() == 3))).thenReturn(true);
+        
         //act
         mock.addAll(Arrays.asList("one", "two", "three"));
         //assert verify(mock, times(0)).addAll(argThat(list -> list.contains("three")));

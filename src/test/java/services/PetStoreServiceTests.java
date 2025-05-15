@@ -12,6 +12,9 @@ import com.petstore.animals.attributes.Skin;
 import com.petstore.exceptions.DuplicatePetStoreRecordException;
 import com.petstore.exceptions.PetNotFoundSaleException;
 
+// New exception for unsupported pet types
+import com.petstore.exceptions.PetTypeNotSupportedException;
+
 import com.petstoreservices.exceptions.PetDataStoreException;
 import com.petstoreservices.exceptions.PetInventoryFileNotCreatedException;
 import com.petstoreservices.repository.PetRepository;
@@ -341,5 +344,66 @@ public class PetStoreServiceTests
 
         return inventoryTests.stream();
     }
+
+    // Test for unsupported pet type update
+    // Test for handling unsupported pet types (Bird, Snake, Fish, etc.) in updateInventory
+
+    @TestFactory
+    @Order(4)
+    @DisplayName("Test unsupported pet type update")
+    public Stream<DynamicTest> testUnsupportedPetTypeUpdate() throws Exception {
+        // Create a bird entity (unsupported type)
+        PetEntity birdEntity = new PetEntity();
+        birdEntity.setPetType(PetType.BIRD);
+        birdEntity.setPetId(1);
+        
+        // Mock the repository to return a bird entity
+        Mockito.doReturn(birdEntity).when(petRepository).findPetByPetTypeAndPetId(PetType.BIRD, 1);
+        
+        // Mock the repository to throw PetTypeNotSupportedException
+        Mockito.doThrow(new PetTypeNotSupportedException("Bird type not supported"))
+            .when(petRepository).updatePetEntity(any(), any());
+        
+        // Execute and verify exception
+        List<DynamicTest> tests = Arrays.asList(
+            DynamicTest.dynamicTest("Should throw PetTypeNotSupportedException",
+                () -> assertThrows(PetTypeNotSupportedException.class, () -> 
+                    petService.updateInventoryByPetIdAndPetType(PetType.BIRD, 1, birdEntity))),
+            DynamicTest.dynamicTest("Should call findPetByPetTypeAndPetId",
+                () -> verify(petRepository, times(1)).findPetByPetTypeAndPetId(PetType.BIRD, 1))
+        );
+        
+        return tests.stream();
+    }
+
+    // Test for duplicate pet records
+    // Test for handling duplicate pet records when searching for a pet by type and id
+
+    @TestFactory
+    @Order(5)
+    @DisplayName("Test duplicate pet records")
+    public Stream<DynamicTest> testDuplicatePetRecords() throws Exception {
+        // Create duplicate pets
+        List<PetEntity> duplicatePets = Arrays.asList(
+            new DogEntity(AnimalType.DOMESTIC, FUR, Gender.MALE, Breed.MALTESE, new BigDecimal("750.00"), 1),
+            new DogEntity(AnimalType.DOMESTIC, FUR, Gender.MALE, Breed.POODLE, new BigDecimal("650.00"), 1)
+        );
+        
+        // Mock repository to throw DuplicatePetStoreRecordException
+        Mockito.doThrow(new DuplicatePetStoreRecordException("Duplicate records found"))
+            .when(petRepository).findPetByPetTypeAndPetId(PetType.DOG, 1);
+        
+        // Execute and verify exception
+        List<DynamicTest> tests = Arrays.asList(
+            DynamicTest.dynamicTest("Should throw DuplicatePetStoreRecordException",
+                () -> assertThrows(DuplicatePetStoreRecordException.class, () -> 
+                    petService.getPetByIdAndType(PetType.DOG, 1))),
+            DynamicTest.dynamicTest("Should call findPetByPetTypeAndPetId",
+                () -> verify(petRepository, times(1)).findPetByPetTypeAndPetId(PetType.DOG, 1))
+        );
+        
+        return tests.stream();
+    }
+
     //What other tests could we add here?
 }
